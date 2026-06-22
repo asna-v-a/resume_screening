@@ -1406,6 +1406,17 @@ body {
     font-size: 0.95rem;
 }
 
+.candidate-name-link {
+    color: var(--text-main);
+    text-decoration: none;
+    transition: var(--transition-smooth);
+}
+
+.candidate-name-link:hover {
+    color: #b388ff;
+    text-decoration: underline;
+}
+
 /* Rank column */
 .col-rank {
     text-align: center;

@@ -118,7 +118,9 @@
                                     
                                     <td class="col-name">
                                         <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
-                                            <strong>{{ resume.candidate_name }}</strong>
+                                            <a href="{{ url_for('candidate_results', resume_id=resume.id) }}" class="candidate-name-link">
+                                                <strong>{{ resume.candidate_name }}</strong>
+                                            </a>
                                             {% if resume.predicted_selection == 1 %}
                                                 <span class="badge badge-success" style="font-size: 0.65rem; padding: 0.1rem 0.35rem;" title="Predicted as a Selected/Good Match by your local Random Forest model"><i class="fa-solid fa-circle-check"></i> Selected</span>
                                             {% else %}

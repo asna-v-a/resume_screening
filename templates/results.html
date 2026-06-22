@@ -6,7 +6,7 @@
 <div class="results-container fade-in">
     <!-- Back to Candidate Rankings Link -->
     <div class="back-link-container">
-        <a href="{{ url_for('dashboard_page', jd_id=resume.jd_id) }}" class="back-link">
+        <a href="{{ url_for('rankings_page', jd_id=resume.jd_id, bypass='true') }}" class="back-link">
             <i class="fa-solid fa-arrow-left-long"></i> Back to Rankings
         </a>
     </div>

@@ -61,8 +61,8 @@ def upload_page():
 
 @app.route('/dashboard')
 def dashboard_page():
-    """Redirect legacy dashboard request to rankings."""
-    return redirect(url_for('rankings_page'))
+    """Redirect legacy dashboard request to rankings preserving query params."""
+    return redirect(url_for('rankings_page', **request.args))
 
 
 @app.route('/rankings')
@@ -91,6 +91,10 @@ def rankings_page():
         
     # Fetch resumes matching this JD
     raw_resumes = get_resumes_for_jd(active_jd_id)
+    
+    # If there is exactly one candidate in this session and bypass is not set, redirect directly to their detailed analysis
+    if len(raw_resumes) == 1 and not request.args.get('bypass'):
+        return redirect(url_for('candidate_results', resume_id=raw_resumes[0]['id']))
     resumes = []
     
     for r in raw_resumes:
