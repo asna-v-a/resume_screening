@@ -50,8 +50,7 @@ def inject_active_page():
 @app.route('/')
 def home():
     """Home page containing the Job Description definition and file upload drag-and-drop form."""
-    jds = get_all_job_descriptions()
-    return render_template('index.html', jds=jds, active_page='home')
+    return render_template('index.html', active_page='home')
 
 
 @app.route('/upload')

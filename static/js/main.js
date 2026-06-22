@@ -123,7 +123,6 @@ document.addEventListener("DOMContentLoaded", function () {
         uploadForm.addEventListener("submit", function (e) {
             e.preventDefault();
 
-            const isNewJd = document.getElementById("existing-jd-select").value === "new";
             const jobTitle = document.getElementById("job-title").value.trim();
             const jobDesc = document.getElementById("job-description").value.trim();
 

@@ -23,19 +23,7 @@
                 </div>
                 
                 <div class="card-body">
-                    <!-- Option to select existing JD -->
-                    <div class="form-group">
-                        <label for="existing-jd-select">Select Existing Role (Optional)</label>
-                        <select id="existing-jd-select" class="form-control" onchange="toggleJdSource()">
-                            <option value="new">-- Create New Role --</option>
-                            {% for jd in jds %}
-                                <option value="{{ jd.id }}" data-title="{{ jd.title }}" data-desc="{{ jd.description }}">
-                                    {{ jd.title }} ({{ jd.created_at[:10] }})
-                                </option>
-                            {% endfor %}
-                        </select>
-                        <small class="form-text">Choose an existing role to match candidates against, or define a new one below.</small>
-                    </div>
+
 
                     <!-- Job Title -->
                     <div class="form-group" id="jd-title-group">
@@ -104,30 +92,4 @@
 </div>
 {% endblock %}
 
-{% block scripts %}
-<script>
-    // JS helpers specific to upload toggling
-    function toggleJdSource() {
-        const select = document.getElementById('existing-jd-select');
-        const jobTitleInput = document.getElementById('job-title');
-        const jobDescTextarea = document.getElementById('job-description');
-        
-        if (select.value === 'new') {
-            jobTitleInput.value = '';
-            jobTitleInput.readOnly = false;
-            jobTitleInput.required = true;
-            jobDescTextarea.value = '';
-            jobDescTextarea.readOnly = false;
-            jobDescTextarea.required = true;
-        } else {
-            const selectedOption = select.options[select.selectedIndex];
-            jobTitleInput.value = selectedOption.getAttribute('data-title');
-            jobTitleInput.readOnly = true;
-            jobTitleInput.required = true;
-            jobDescTextarea.value = selectedOption.getAttribute('data-desc');
-            jobDescTextarea.readOnly = true;
-            jobDescTextarea.required = true;
-        }
-    }
-</script>
-{% endblock %}
+
