@@ -1,0 +1,22 @@
+# SQLite Database
+database.db
+
+# Uploaded candidate resumes
+uploads/*
+!uploads/.gitkeep
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/
+venv/
+env/
+
+# Large training dataset
+data/
+
+# Local config file containing API keys
+config.json

@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block title %}Candidate Rankings & Analytics - AI Resume Screener{% endblock %}
+
+{% block content %}
+<div class="dashboard-container fade-in">
+    <!-- Header Panel -->
+    <div class="dashboard-header-panel">
+        <div class="dashboard-title-area">
+            <h1>Candidate Rankings</h1>
+            <p>Active Screening Session: <span class="accent-text" style="font-weight: 600;">{{ selected_jd.title }}</span></p>
+        </div>
+        
+        <div class="jd-preview-actions" style="display: flex; gap: 1rem;">
+            <a href="{{ url_for('export_csv', jd_id=selected_jd.id) }}" class="btn btn-secondary">
+                <i class="fa-solid fa-file-csv"></i> Export CSV
+            </a>
+            <a href="{{ url_for('home') }}" class="btn btn-primary">
+                <i class="fa-solid fa-plus"></i> New Screening
+            </a>
+        </div>
+    </div>
+
+    <!-- Job Description Preview Card -->
+    <div class="card jd-preview-card" style="margin-bottom: 0.5rem; padding: 1.25rem 2rem;">
+        <div class="jd-preview-text">
+            <strong>Target Job Description Snippet:</strong>
+            <p>{{ selected_jd.description[:300] }}{% if selected_jd.description|length > 300 %}...{% endif %}</p>
+        </div>
+    </div>
+
+        <!-- Analytics Stats Grid -->
+        <div class="stats-grid dashboard-stats">
+            <div class="stat-card">
+                <div class="stat-icon icon-blue">
+                    <i class="fa-solid fa-users"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>Candidates Screened</h3>
+                    <p class="stat-number">{{ analytics.total_resumes }}</p>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon icon-purple">
+                    <i class="fa-solid fa-chart-pie"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>Average Match</h3>
+                    <p class="stat-number">{{ analytics.avg_match_score }}%</p>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon icon-green">
+                    <i class="fa-solid fa-clipboard-check"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>Average ATS Health</h3>
+                    <p class="stat-number">{{ analytics.avg_ats_score }}%</p>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon icon-gold">
+                    <i class="fa-solid fa-award"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>Top Candidate</h3>
+                    <p class="stat-number truncate-text" title="{{ analytics.top_candidate }}">{{ analytics.top_candidate }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Candidate Rankings Table Card -->
+        <div class="card table-card slide-up">
+            <div class="card-header table-header-flex">
+                <h2>Ranked Candidates</h2>
+                <div class="table-search-box">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="rankings-search" class="form-control" placeholder="Search candidates..." onkeyup="filterRankingsTable()">
+                </div>
+            </div>
+            
+            <div class="card-body no-padding table-responsive">
+                {% if not resumes %}
+                    <div class="empty-table-msg">
+                        <p>No candidates processed for this job description yet. Upload resumes to see rankings.</p>
+                        <a href="{{ url_for('upload_page') }}" class="btn btn-secondary btn-sm">Upload Resumes</a>
+                    </div>
+                {% else %}
+                    <table class="leaderboard-table" id="rankings-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 60px; text-align: center;">Rank</th>
+                                <th>Candidate Details</th>
+                                <th style="width: 160px;">Match Score</th>
+                                <th style="width: 180px;">ATS Compatibility</th>
+                                <th>Missing Keywords</th>
+                                <th style="width: 140px; text-align: center;">Parsing Issues</th>
+                                <th style="width: 110px; text-align: center;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for resume in resumes %}
+                                <tr class="leaderboard-row">
+                                    <td class="col-rank">
+                                        {% if loop.index == 1 %}
+                                            <span class="rank-badge rank-first"><i class="fa-solid fa-trophy"></i></span>
+                                        {% elif loop.index == 2 %}
+                                            <span class="rank-badge rank-second">2</span>
+                                        {% elif loop.index == 3 %}
+                                            <span class="rank-badge rank-third">3</span>
+                                        {% else %}
+                                            <span class="rank-badge">{{ loop.index }}</span>
+                                        {% endif %}
+                                    </td>
+                                    
+                                    <td class="col-name">
+                                        <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+                                            <strong>{{ resume.candidate_name }}</strong>
+                                            {% if resume.predicted_selection == 1 %}
+                                                <span class="badge badge-success" style="font-size: 0.65rem; padding: 0.1rem 0.35rem;" title="Predicted as a Selected/Good Match by your local Random Forest model"><i class="fa-solid fa-circle-check"></i> Selected</span>
+                                            {% else %}
+                                                <span class="badge badge-danger" style="font-size: 0.65rem; padding: 0.1rem 0.35rem;" title="Predicted as a Rejected/Not a Match by your local Random Forest model"><i class="fa-solid fa-circle-xmark"></i> Rejected</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="skills-preview text-muted truncate-text" title="Email: {{ resume.candidate_email }}" style="margin-top: 0.2rem;">
+                                            <i class="fa-regular fa-envelope"></i> {{ resume.candidate_email }}
+                                        </div>
+                                    </td>
+                                    
+                                    <td class="col-progress">
+                                        <div class="table-progress-flex">
+                                            <span class="progress-val">{{ resume.match_score|int }}%</span>
+                                            <div class="progress-bar-container table-progress">
+                                                <div class="progress-bar match-progress-color" style="width: {{ resume.match_score }}%"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    
+                                    <td class="col-ats-status">
+                                        <span class="badge {{ resume.ats_status_class }}">
+                                            {{ resume.ats_score }}% - {{ resume.ats_status }}
+                                        </span>
+                                    </td>
+                                    
+                                    <td class="col-missing">
+                                        <div class="tags-container">
+                                            {% if resume.missing_keywords %}
+                                                {% for kw in resume.missing_keywords[:3] %}
+                                                    <span class="tag tag-missing" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">{{ kw }}</span>
+                                                {% endfor %}
+                                                {% if resume.missing_keywords|length > 3 %}
+                                                    <span class="text-muted" style="font-size: 0.75rem; margin-left: 0.2rem;">+{{ resume.missing_keywords|length - 3 }} more</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="text-success" style="font-size: 0.85rem;"><i class="fa-solid fa-circle-check"></i> None</span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    
+                                    <td class="col-issues" style="text-align: center;">
+                                        {% if resume.issues_count > 0 %}
+                                            <span class="badge badge-danger" title="{{ ', '.join(resume.issues_list) }}">
+                                                <i class="fa-solid fa-triangle-exclamation"></i> {{ resume.issues_count }} Issues
+                                            </span>
+                                        {% else %}
+                                            <span class="badge badge-success">
+                                                <i class="fa-solid fa-circle-check"></i> None
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    
+                                    <td class="col-actions">
+                                        <div class="action-btn-group">
+                                            <a href="{{ url_for('candidate_results', resume_id=resume.id) }}" class="btn btn-icon btn-view" title="View Detailed Report">
+                                                <i class="fa-solid fa-circle-info"></i>
+                                            </a>
+                                            <form action="{{ url_for('delete_resume', resume_id=resume.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this candidate record?');">
+                                                <button type="submit" class="btn btn-icon btn-delete" title="Delete Candidate">
+                                                    <i class="fa-solid fa-trash-can"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% endif %}
+            </div>
+        </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Search filter function for rankings table
+    function filterRankingsTable() {
+        const input = document.getElementById("rankings-search");
+        const filter = input.value.toLowerCase();
+        const table = document.getElementById("rankings-table");
+        
+        if (!table) return;
+        
+        const trs = table.getElementsByTagName("tr");
+
+        // Loop through all table rows (excluding header)
+        for (let i = 1; i < trs.length; i++) {
+            const nameCol = trs[i].getElementsByClassName("col-name")[0];
+            
+            if (nameCol) {
+                const text = nameCol.textContent || nameCol.innerText;
+                if (text.toLowerCase().indexOf(filter) > -1) {
+                    trs[i].style.display = "";
+                } else {
+                    trs[i].style.display = "none";
+                }
+            }
+        }
+    }
+</script>
+{% endblock %}

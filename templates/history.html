@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Screening History - AI Resume Screener{% endblock %}
+
+{% block content %}
+<div class="dashboard-container fade-in">
+    <!-- Header Area -->
+    <div class="dashboard-header-panel">
+        <div class="dashboard-title-area">
+            <h1>Screening History</h1>
+            <p>Access previous evaluations, check aggregate statistics, and clean up outdated records.</p>
+        </div>
+    </div>
+    
+    <!-- History Cards Grid -->
+    {% if not jds %}
+        <div class="card slide-up" style="margin-top: 1.5rem;">
+            <div class="card-body">
+                <div class="empty-table-msg">
+                    <i class="fa-solid fa-folder-open" style="font-size: 4rem; opacity: 0.3; margin-bottom: 1.5rem; display: block;"></i>
+                    <p>No screening history found. Submit a Job Description on the homepage to start.</p>
+                    <a href="{{ url_for('home') }}" class="btn btn-primary btn-sm">Screen Resumes</a>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="history-grid slide-up">
+            {% for jd in jds %}
+                <div class="history-card">
+                    <div class="history-card-header">
+                        <h2 class="history-card-title">{{ jd.title }}</h2>
+                        <div class="history-card-date">
+                            <i class="fa-regular fa-calendar"></i>
+                            <span>{{ jd.created_at[:16] }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="history-card-body">
+                        <p class="history-card-desc" title="{{ jd.description }}">
+                            {{ jd.description }}
+                        </p>
+                        
+                        <div class="history-card-stats">
+                            <div class="history-stat-item">
+                                <div class="history-stat-label">Resumes</div>
+                                <div class="history-stat-value">{{ jd.candidate_count }}</div>
+                            </div>
+                            <div class="history-stat-item">
+                                <div class="history-stat-label">Avg Match</div>
+                                <div class="history-stat-value primary">
+                                    {% if jd.candidate_count > 0 and jd.avg_match %}{{ jd.avg_match|round(1) }}%{% else %}N/A{% endif %}
+                                </div>
+                            </div>
+                            <div class="history-stat-item">
+                                <div class="history-stat-label">Top Match</div>
+                                <div class="history-stat-value success">
+                                    {% if jd.candidate_count > 0 and jd.top_match %}{{ jd.top_match|round(1) }}%{% else %}N/A{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="history-card-actions">
+                        <a href="{{ url_for('history_open', jd_id=jd.id) }}" class="btn btn-primary btn-sm" style="flex: 1; text-align: center; display: inline-flex; justify-content: center; align-items: center; gap: 0.5rem; border-radius: 8px;">
+                            <i class="fa-solid fa-folder-open"></i> Open Details
+                        </a>
+                        <form action="{{ url_for('delete_jd', jd_id=jd.id) }}" method="POST" style="display:inline; margin: 0;" onsubmit="return confirm('WARNING: Deleting this session will delete the Job Description, all candidate records, and all uploaded resume files. Are you sure you want to proceed?');">
+                            <button type="submit" class="btn btn-icon btn-delete" style="width: 36px; height: 36px; border-radius: 8px;" title="Delete Session">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

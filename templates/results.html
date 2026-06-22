@@ -1,0 +1,413 @@
+{% extends "base.html" %}
+
+{% block title %}Candidate Analysis - {{ resume.candidate_name }}{% endblock %}
+
+{% block content %}
+<div class="results-container fade-in">
+    <!-- Back to Candidate Rankings Link -->
+    <div class="back-link-container">
+        <a href="{{ url_for('dashboard_page', jd_id=resume.jd_id) }}" class="back-link">
+            <i class="fa-solid fa-arrow-left-long"></i> Back to Rankings
+        </a>
+    </div>
+
+    <!-- Candidate Profile Header Card -->
+    <div class="card profile-header-card">
+        <div class="profile-header-grid">
+            <div class="profile-avatar">
+                <i class="fa-solid fa-user-tie"></i>
+            </div>
+            
+            <div class="profile-info">
+                <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.25rem;">
+                    <h1 style="margin: 0;">{{ resume.candidate_name }}</h1>
+                    {% if predicted_selection == 1 %}
+                        <span class="badge badge-success" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;" title="Predicted as a Selected/Good Match by your local Random Forest model"><i class="fa-solid fa-circle-check"></i> ML Predict: Selected</span>
+                    {% else %}
+                        <span class="badge badge-danger" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;" title="Predicted as a Rejected/Not a Match by your local Random Forest model"><i class="fa-solid fa-circle-xmark"></i> ML Predict: Rejected</span>
+                    {% endif %}
+                </div>
+                <p class="profile-file" style="margin: 0;"><i class="fa-solid fa-file-arrow-down"></i> Source File: {{ resume.filename }}</p>
+                <div class="contact-badges">
+                    <span class="contact-badge">
+                        <i class="fa-solid fa-envelope"></i> {{ resume.candidate_email }}
+                    </span>
+                    {% if resume.phone and resume.phone != 'Not Found' %}
+                    <span class="contact-badge">
+                        <i class="fa-solid fa-phone"></i> {{ resume.phone }}
+                    </span>
+                    {% endif %}
+                    <span class="contact-badge badge-role">
+                        <i class="fa-solid fa-briefcase"></i> Applied for: {{ jd.title }}
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Scores Summary Cards -->
+            <div class="profile-scores-summary">
+                <div class="score-summary-box match-box">
+                    <div class="score-num">{{ resume.match_score|int }}%</div>
+                    <div class="score-label">JD Match Score</div>
+                </div>
+                <div class="score-summary-box ats-box">
+                    <div class="score-num">{{ resume.ats_score|int }}%</div>
+                    <div class="score-label">ATS Health Score</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dynamic Metrics Progress Rings Section -->
+    <div class="metrics-grid">
+        <!-- Match Score Card -->
+        <div class="card metric-card">
+            <div class="card-header">
+                <h2>Job Fit Analysis</h2>
+            </div>
+            <div class="card-body centered-metric">
+                <div class="progress-ring-container">
+                    <!-- SVG Progress Circle -->
+                    <svg class="progress-ring" width="160" height="160">
+                        <circle class="progress-ring__background" stroke="#25213b" stroke-width="12" fill="transparent" r="70" cx="80" cy="80"/>
+                        <circle class="progress-ring__circle" id="match-ring" stroke="url(#matchGrad)" stroke-width="12" stroke-linecap="round" fill="transparent" r="70" cx="80" cy="80"
+                                data-progress="{{ resume.match_score }}"/>
+                        <defs>
+                            <linearGradient id="matchGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#8a2be2" />
+                                <stop offset="100%" stop-color="#4a00e0" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <div class="progress-ring-value">{{ resume.match_score|int }}%</div>
+                </div>
+                <div class="metric-desc">
+                    <p>Calculated using semantic text similarity (TF-IDF + Cosine Similarity) comparing candidate skills and work context against the Job Description requirements.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ATS Score Card -->
+        <div class="card metric-card">
+            <div class="card-header">
+                <h2>ATS Compatibility Health</h2>
+            </div>
+            <div class="card-body centered-metric">
+                <div class="progress-ring-container">
+                    <!-- SVG Progress Circle -->
+                    <svg class="progress-ring" width="160" height="160">
+                        <circle class="progress-ring__background" stroke="#25213b" stroke-width="12" fill="transparent" r="70" cx="80" cy="80"/>
+                        <circle class="progress-ring__circle" id="ats-ring" stroke="url(#atsGrad)" stroke-width="12" stroke-linecap="round" fill="transparent" r="70" cx="80" cy="80"
+                                data-progress="{{ resume.ats_score }}"/>
+                        <defs>
+                            <linearGradient id="atsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#00f2fe" />
+                                <stop offset="100%" stop-color="#4facfe" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <div class="progress-ring-value">{{ resume.ats_score|int }}%</div>
+                </div>
+                <div class="metric-desc">
+                    <p>Scored against core ATS parsing criteria: section labeling, document length, formatting complexity (tables, charts), and keyword coverage ratio.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Details Tabbed Sections -->
+    <div class="card details-card">
+        <div class="tab-header">
+            <button class="tab-btn active" onclick="openTab(event, 'ats-audit')">
+                <i class="fa-solid fa-list-check"></i> ATS Audit & Suggestions
+            </button>
+            <button class="tab-btn" onclick="openTab(event, 'keyword-analysis')">
+                <i class="fa-solid fa-tags"></i> Keywords Comparison
+            </button>
+            <button class="tab-btn" onclick="openTab(event, 'parsed-data')">
+                <i class="fa-solid fa-file-invoice"></i> Extracted Sections
+            </button>
+            <button class="tab-btn" onclick="openTab(event, 'raw-text')">
+                <i class="fa-solid fa-align-left"></i> Raw Text Preview
+            </button>
+            <button class="tab-btn" onclick="openTab(event, 'ai-optimizer')">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> AI Resume Optimizer
+            </button>
+        </div>
+        
+        <div class="tab-body">
+            <!-- TAB 1: ATS Audit -->
+            <div id="ats-audit" class="tab-content active">
+                <div class="audit-grid">
+                    <!-- Left: Issues List -->
+                    <div class="audit-issues">
+                        <h3>Critical Issues Detected ({% if suggestions_dict.issues %}{{ suggestions_dict.issues|length }}{% else %}0{% endif %})</h3>
+                        {% if suggestions_dict.issues %}
+                            <ul class="issues-list">
+                                {% for issue in suggestions_dict.issues %}
+                                    <li class="issue-item">
+                                        <i class="fa-solid fa-triangle-exclamation issue-icon"></i>
+                                        <span>{{ issue }}</span>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <div class="no-issues-glow">
+                                <i class="fa-solid fa-circle-check text-success"></i>
+                                <p>No critical parsing bottlenecks or formatting issues were detected.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Right: Suggestions cards -->
+                    <div class="audit-suggestions">
+                        <h3>Improvement Roadmap</h3>
+                        <div class="suggestions-container">
+                            {% if suggestions_dict.suggestions %}
+                                {% for suggestion in suggestions_dict.suggestions %}
+                                    <div class="suggestion-card">
+                                        <div class="suggestion-num">0{{ loop.index }}</div>
+                                        <div class="suggestion-text">{{ suggestion }}</div>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="suggestion-card perfect-fit">
+                                    <div class="suggestion-text">Your document is highly optimized! Keep this structural alignment.</div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: Keyword Analysis -->
+            <div id="keyword-analysis" class="tab-content">
+                <div class="keywords-summary-alert">
+                    <p>
+                        <i class="fa-solid fa-circle-info"></i> 
+                        The keywords list combines technical skills and key contextual terms detected in the Job Description. Adding missing terms to your experiences increases your search visibility.
+                    </p>
+                </div>
+                
+                <div class="keywords-grid">
+                    <!-- Matched Keywords -->
+                    <div class="keyword-box matched-box">
+                        <h3>Matched Keywords ({{ matching_keywords|length }})</h3>
+                        <div class="tags-container">
+                            {% for kw in matching_keywords %}
+                                <span class="tag tag-matched"><i class="fa-solid fa-circle-check"></i> {{ kw }}</span>
+                            {% empty %}
+                                <p class="empty-text">No matching keywords found.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <!-- Missing Keywords -->
+                    <div class="keyword-box missing-box">
+                        <h3>Missing Keywords ({{ missing_keywords|length }})</h3>
+                        <div class="tags-container">
+                            {% for kw in missing_keywords %}
+                                <span class="tag tag-missing"><i class="fa-solid fa-circle-plus"></i> {{ kw }}</span>
+                            {% empty %}
+                                <p class="empty-text">No missing keywords! Perfect score.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: Parsed Data -->
+            <div id="parsed-data" class="tab-content">
+                <div class="parsed-sections-grid">
+                    <div class="parsed-box">
+                        <h3><i class="fa-solid fa-graduation-cap"></i> Education Section</h3>
+                        <div class="parsed-content-box">
+                            {% if resume.education %}
+                                <pre>{{ resume.education }}</pre>
+                            {% else %}
+                                <p class="empty-text">No clear Education section could be parsed automatically.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="parsed-box">
+                        <h3><i class="fa-solid fa-briefcase"></i> Experience Section</h3>
+                        <div class="parsed-content-box">
+                            {% if resume.experience %}
+                                <pre>{{ resume.experience }}</pre>
+                            {% else %}
+                                <p class="empty-text">No clear Experience section could be parsed automatically.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="parsed-box full-width-box">
+                    <h3><i class="fa-solid fa-code"></i> Skills Parsed (Metadata)</h3>
+                    <div class="tags-container">
+                        {% if resume.skills %}
+                            {% for skill in resume.skills.split(', ') %}
+                                <span class="tag tag-skills">{{ skill }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <p class="empty-text">No skills identified in metadata scan.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: Raw Text -->
+            <div id="raw-text" class="tab-content">
+                <div class="raw-preview-box">
+                    <pre>{{ resume.raw_text }}</pre>
+                </div>
+            </div>
+
+            <!-- TAB 5: AI Resume Optimizer -->
+            <div id="ai-optimizer" class="tab-content">
+                <div class="card" style="padding: 2rem; background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.1); border-radius: 12px; margin-top: 0;">
+                    <div id="optimizer-status-container">
+                        {% if suggestions_dict.optimized_resume %}
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <h3 style="margin: 0; color: #fff;"><i class="fa-solid fa-wand-magic-sparkles" style="color: #b388ff;"></i> AI-Optimized Resume Draft</h3>
+                                <button class="btn btn-secondary btn-sm" onclick="copyOptimizedText()" style="border-radius: 8px;">
+                                    <i class="fa-solid fa-copy"></i> Copy Resume
+                                </button>
+                            </div>
+                            <div class="raw-preview-box" style="max-height: 500px; overflow-y: auto; background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); border-radius: 10px; padding: 1.5rem;">
+                                <pre id="optimized-resume-text" style="white-space: pre-wrap; font-family: inherit; color: var(--text-secondary); margin: 0; line-height: 1.6;">{{ suggestions_dict.optimized_resume }}</pre>
+                            </div>
+                        {% else %}
+                            <div style="text-align: center; padding: 2rem 0;">
+                                <i class="fa-solid fa-wand-magic-sparkles" style="font-size: 3.5rem; color: #b388ff; opacity: 0.7; margin-bottom: 1.5rem; display: block;"></i>
+                                <h3 style="color: #fff; margin-bottom: 0.5rem;">Optimize Candidate Resume with Groq AI</h3>
+                                <p class="text-muted" style="max-width: 500px; margin: 0 auto 1.5rem; font-size: 0.95rem;">
+                                    Automatically inject missing keywords, adjust phrasing, and rewrite this resume to perfectly match the target Job Description utilizing the Llama-3.1 model.
+                                </p>
+                                <button class="btn btn-primary" onclick="generateAiResume({{ resume.id }})" style="padding: 0.75rem 2rem; border-radius: 8px;">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Optimized Resume
+                                </button>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Tab switching functionality
+    function openTab(evt, tabName) {
+        // Declare all variables
+        var i, tabcontent, tablinks;
+
+        // Get all elements with class="tab-content" and hide them
+        tabcontent = document.getElementsByClassName("tab-content");
+        for (i = 0; i < tabcontent.length; i++) {
+            tabcontent[i].classList.remove("active");
+        }
+
+        // Get all elements with class="tab-btn" and remove the class "active"
+        tablinks = document.getElementsByClassName("tab-btn");
+        for (i = 0; i < tablinks.length; i++) {
+            tablinks[i].classList.remove("active");
+        }
+
+        // Show the current tab, and add an "active" class to the button that opened the tab
+        document.getElementById(tabName).classList.add("active");
+        evt.currentTarget.classList.add("active");
+    }
+
+    // Set SVG progress ring stroke offset on load
+    document.addEventListener("DOMContentLoaded", function() {
+        const rings = [
+            { id: "match-ring", color: "#8a2be2" },
+            { id: "ats-ring", color: "#00f2fe" }
+        ];
+
+        rings.forEach(ringObj => {
+            const circle = document.getElementById(ringObj.id);
+            if (circle) {
+                const radius = circle.r.baseVal.value;
+                const circumference = radius * 2 * Math.PI;
+                const progress = circle.getAttribute('data-progress');
+                
+                circle.style.strokeDasharray = `${circumference} ${circumference}`;
+                circle.style.strokeDashoffset = circumference;
+                
+                // Animate transition after render
+                setTimeout(() => {
+                    const offset = circumference - (progress / 100) * circumference;
+                    circle.style.strokeDashoffset = offset;
+                }, 100);
+            }
+        });
+    });
+
+    function generateAiResume(resumeId) {
+        const container = document.getElementById("optimizer-status-container");
+        if (!container) return;
+        
+        container.innerHTML = `
+            <div style="text-align: center; padding: 3rem 0;">
+                <div class="spinner" style="margin-bottom: 1.5rem;">
+                    <div class="double-bounce1" style="background-color: #b388ff;"></div>
+                    <div class="double-bounce2" style="background-color: #80f7ff;"></div>
+                </div>
+                <h3 style="color: #fff; margin-bottom: 0.5rem;">Optimizing Resume via Llama-3.1...</h3>
+                <p class="text-muted">Analyzing keywords, formatting achievements, and tailoring draft.</p>
+            </div>
+        `;
+        
+        fetch(`/api/optimize-resume/${resumeId}`, {
+            method: "POST"
+        })
+        .then(response => {
+            if (!response.ok) throw new Error("Optimization request failed.");
+            return response.json();
+        })
+        .then(data => {
+            if (!data.success) throw new Error(data.error || "Failed to optimize.");
+            
+            container.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h3 style="margin: 0; color: #fff;"><i class="fa-solid fa-wand-magic-sparkles" style="color: #b388ff;"></i> AI-Optimized Resume Draft</h3>
+                    <button class="btn btn-secondary btn-sm" onclick="copyOptimizedText()" style="border-radius: 8px;">
+                        <i class="fa-solid fa-copy"></i> Copy Resume
+                    </button>
+                </div>
+                <div class="raw-preview-box" style="max-height: 500px; overflow-y: auto; background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); border-radius: 10px; padding: 1.5rem;">
+                    <pre id="optimized-resume-text" style="white-space: pre-wrap; font-family: inherit; color: var(--text-secondary); margin: 0; line-height: 1.6;">${data.optimized_resume}</pre>
+                </div>
+            `;
+        })
+        .catch(err => {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 2rem 0;">
+                    <i class="fa-solid fa-circle-exclamation" style="font-size: 3.5rem; color: #ff5252; margin-bottom: 1.5rem; display: block;"></i>
+                    <h3 style="color: #fff; margin-bottom: 0.5rem;">Optimization Failed</h3>
+                    <p class="text-muted" style="max-width: 500px; margin: 0 auto 1.5rem;">
+                        ${err.message}
+                    </p>
+                    <button class="btn btn-primary" onclick="generateAiResume(${resumeId})" style="padding: 0.75rem 2rem; border-radius: 8px;">
+                        <i class="fa-solid fa-rotate-right"></i> Try Again
+                    </button>
+                </div>
+            `;
+        });
+    }
+    
+    function copyOptimizedText() {
+        const textEl = document.getElementById("optimized-resume-text");
+        if (!textEl) return;
+        
+        navigator.clipboard.writeText(textEl.textContent).then(() => {
+            alert("AI-Optimized Resume copied to clipboard!");
+        }).catch(err => {
+            console.error("Clipboard copy failed:", err);
+        });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AI Resume Screener & ATS Checker{% endblock %}</title>
+    <!-- Google Font: Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom Style Sheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <!-- Background Decor (Glow Effects) -->
+    <div class="glow-bg">
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2"></div>
+    </div>
+
+    <!-- Header / Navbar -->
+    <header class="navbar">
+        <div class="navbar-container">
+            <a href="{{ url_for('home') }}" class="logo">
+                <i class="fa-solid fa-brain-circuit brain-icon"></i>
+                <span>Screener<span class="logo-accent">ATS</span></span>
+            </a>
+            
+            <nav class="nav-links">
+                <a href="{{ url_for('home') }}" class="nav-link {% if active_page == 'home' %}active{% endif %}">
+                    <i class="fa-solid fa-house"></i> Home
+                </a>
+                <a href="{{ url_for('history_page') }}" class="nav-link {% if active_page == 'history' %}active{% endif %}">
+                    <i class="fa-solid fa-clock-rotate-left"></i> History
+                </a>
+            </nav>
+            
+            <div class="nav-status">
+                <span class="badge badge-success">
+                    <i class="fa-solid fa-shield-halved"></i> Active Engine
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-container">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash-message flash-{{ category }}">
+                            <i class="fa-solid {% if category == 'success' %}fa-circle-check{% elif category == 'error' %}fa-circle-exclamation{% else %}fa-circle-info{% endif %}"></i>
+                            <span>{{ message }}</span>
+                            <button class="flash-close-btn" onclick="this.parentElement.remove()">&times;</button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>&copy; 2026 AI Resume Screener with ATS Checker.</p>
+    </footer>
+
+    <!-- Global Scripts -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
